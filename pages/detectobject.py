@@ -57,7 +57,7 @@ def detect_objects(image):
 
 # Daftar kelas objek (misalnya, COCO dataset)
 classes = []
-with open("coco.names", "r") as f:
+with open("./coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 st.title("Deteksi Objek dengan Streamlit")
