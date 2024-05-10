@@ -6,7 +6,7 @@ st.subheader('NIM : 312210242')
 st.subheader('Kelas : TI.22.B1')
 st.subheader('Prodi : Teknik Infomatika')
 
-st.image("./img/adam.jpg", caption="Adam", use_column_width="Always", width=200)
+st.image("./img/adam3.jpg", caption="Adam", use_column_width="Always", width=200)
 
 
 st.link_button("Instagram", "https://www.instagram.com/adam_webdev/")
