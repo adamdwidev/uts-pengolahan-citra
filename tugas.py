@@ -38,7 +38,7 @@ def main():
 
         with col2:
             st.sidebar.subheader("Image Manipulations")
-            selected_option = st.sidebar.selectbox("Select an option", ["RGB to HSV", "Histogram", "Brightness and Contrast", "Contour", "Grayscale", "Blur", "Edge Detection", "Thresholding", "Rotate", "Resize", "Flip", "Crop"], index=None)
+            selected_option = st.sidebar.selectbox("Select an option", ["RGB to HSV", "Histogram", "Brightness and Contrast", "Contour", "Grayscale", "Blur", "Edge Detection", "Thresholding", "Rotate", "Resize", "Flip", "Crop"])
 
             if selected_option == "RGB to HSV":
                 hsv_image = rgb_to_hsv(image)
