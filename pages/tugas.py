@@ -38,7 +38,7 @@ def main():
 
         with col2:
             st.sidebar.subheader("Image Manipulations")
-            selected_option = st.sidebar.selectbox("Select an option", ["RGB to HSV", "Histogram", "Brightness and Contrast", "Contour", "Grayscale", "Blur", "Edge Detection", "Thresholding", "Rotate", "Resize", "Flip", "Crop"])
+            selected_option = st.sidebar.selectbox("Select an option", ["RGB to HSV", "Histogram", "Brightness and Contrast", "Contour", "Grayscale", "Blur", "Edge Detection", "Thresholding", "Rotate", "Resize", "Flip", "Crop"], index=None)
 
             if selected_option == "RGB to HSV":
                 hsv_image = rgb_to_hsv(image)
@@ -101,6 +101,11 @@ def main():
                 height = st.number_input("Height", value=image.shape[0])
                 cropped_image = image[y:y+height, x:x+width]
                 st.image(cropped_image, caption="Cropped Image", use_column_width=True)
+
+            elif selected_option == "Remove Background":
+                background_removed_image = remove_background(image)
+                st.image(background_removed_image, caption="Background Removed Image", use_column_width=True)
+
 
 if __name__ == "__main__":
     main()
