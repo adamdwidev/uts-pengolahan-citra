@@ -1,129 +1,77 @@
-# Python In-built packages
-from pathlib import Path
-import PIL
-import os
-from collections import Counter
-
-# External packages
 import streamlit as st
+import cv2
+from PIL import Image
+import numpy as np
 
-# Local Modules
-import settings
-import helper
+# Fungsi untuk mendeteksi objek menggunakan OpenCV
+def detect_objects(image):
+    # Load model deteksi objek (misalnya YOLOv3)
+    net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
+    layer_names = net.getLayerNames()
+    output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-# Setting page layout
-st.set_page_config(
-    page_title="Object Detection using YOLOv8",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+    # Resize image dan mendapatkan dimensi
+    blob = cv2.dnn.blobFromImage(image, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+    height, width, channels = image.shape
 
-# Main page heading
-st.title("Object Detection using YOLOv8")
+    # Set input ke model
+    net.setInput(blob)
+    outs = net.forward(output_layers)
 
-# Sidebar
-st.sidebar.header("ML Model Config")
+    # Inisialisasi variabel
+    class_ids = []
+    confidences = []
+    boxes = []
 
-# Model Options
-model_type = st.sidebar.radio(
-    "Select Task", ['Detection'])
+    # Loop melalui deteksi
+    for out in outs:
+        for detection in out:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+            if confidence > 0.5:
+                # Mendapatkan koordinat kotak pembatas objek
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
+                boxes.append([x, y, w, h])
+                confidences.append(float(confidence))
+                class_ids.append(class_id)
 
-confidence = float(st.sidebar.slider(
-    "Select Model Confidence", 25, 100, 40)) / 100
+    # Non-maximum suppression
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
 
-# Selecting Detection Or Segmentation
-if model_type == 'Detection':
-    model_path = Path(settings.DETECTION_MODEL)
+    # Draw bounding boxes
+    colors = np.random.uniform(0, 255, size=(len(boxes), 3))
+    for i in range(len(boxes)):
+        if i in indexes:
+            x, y, w, h = boxes[i]
+            label = str(classes[class_ids[i]])
+            color = colors[i]
+            cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(image, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1.5, color, 2)
+    return image
 
-# Load Pre-trained ML Model
-try:
-    model = helper.load_model(model_path)
-except Exception as ex:
-    st.error(f"Unable to load model. Check the specified path: {model_path}")
-    st.error(ex)
+# Daftar kelas objek (misalnya, COCO dataset)
+classes = []
+with open("coco.names", "r") as f:
+    classes = [line.strip() for line in f.readlines()]
 
-st.sidebar.header("Image/Video Config")
-source_radio = st.sidebar.radio(
-    "Select Source", settings.SOURCES_LIST)
+st.title("Deteksi Objek dengan Streamlit")
 
-source_imgs = []
+# Upload gambar
+uploaded_file = st.file_uploader("Upload Gambar", type=["jpg", "jpeg", "png"])
 
-class_names_file = 'weights/class_names.txt'  # Replace with the actual path
-with open(class_names_file, 'r') as f:
-    class_names = f.read().splitlines()
+if uploaded_file is not None:
+    # Baca gambar
+    image = Image.open(uploaded_file)
+    img_array = np.array(image)
 
-# Create a dictionary mapping class IDs to class names
-CLASS_NAMES_DICT = {i: name for i, name in enumerate(class_names)}
+    # Deteksi objek
+    detected_image = detect_objects(img_array)
 
-# If image is selected
-if source_radio == settings.IMAGE:
-    uploaded_images = st.sidebar.file_uploader(
-        "Upload multiple images...", type=("jpg", "jpeg", "png", 'bmp', 'webp'), accept_multiple_files=True)
-
-    if uploaded_images:
-        source_imgs.extend(uploaded_images)
-
-# CLASS_NAMES_DICT=
-
-if source_imgs:
-    detect_button = st.sidebar.button("Detect Objects for All Images")
-
-    if detect_button:
-        class_counts_all_images = {}  # Dictionary to store class counts for all images
-
-        for i, source_img in enumerate(source_imgs, start=1):
-            col1, col2 = st.columns(2)
-
-            with col1:
-                try:
-                    uploaded_image = PIL.Image.open(source_img)
-                    st.image(uploaded_image, caption="Uploaded Image",
-                             use_column_width=True)
-                except Exception as ex:
-                    st.error("Error occurred while opening the image.")
-                    st.error(ex)
-
-            with col2:
-                if source_img is None:
-                    # Create a default detected image with a message
-                    default_detected_image = PIL.Image.new(
-                        'RGB', (500, 500), (255, 255, 255))
-                    draw = PIL.ImageDraw.Draw(default_detected_image)
-                    draw.text((50, 50), "No image uploaded and detected.",
-                              fill=(0, 0, 0))
-                    st.image(default_detected_image, caption='Detected Image',
-                             use_column_width=True)
-                else:
-                    res = model.predict(uploaded_image, conf=confidence)
-                    boxes = res[0].boxes
-                    # Extract the names of detected objects
-                    names = res[0].names
-                    res_plotted = res[0].plot()[:, :, ::-1]
-                    st.image(res_plotted, caption='Detected Image',
-                             use_column_width=True)
-
-                    try:
-                        with st.expander(f"Image {i} Detection Results"):
-                            object_count = len(boxes)
-                            st.write(
-                                f"Number of objects detected: {object_count}")
-
-                            # Count and display object names
-                            object_name_counts = {}
-                            for name in names:
-                                object_name = CLASS_NAMES_DICT.get(name, name)
-                                object_name_counts[object_name] = object_name_counts.get(
-                                    object_name, 0) + 1
-
-                            st.write("Object Counts:")
-                            for name, count in object_name_counts.items():
-                                # Use st.text() to display results
-                                st.text(f"{name}: {count}")
-
-                            # Store class counts for this image in the dictionary
-                            class_counts_all_images[f"Image {i}"] = object_name_counts.copy(
-                            )
-
-                    except Exception as ex:
-                        st.write("No objects detected!")
+    # Tampilkan hasil
+    st.image(detected_image, caption='Deteksi Objek', use_column_width=True)
