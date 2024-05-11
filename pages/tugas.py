@@ -78,8 +78,15 @@ def main():
                 st.image(threshold_image, caption="Thresholded Image", use_column_width=True)
 
             elif selected_option == "Rotate":
-                angle = st.slider("Angle", -180, 180, 0)
-                rotated_image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+                angle = st.slider("Angle", -180, 360, 0)
+                # rotated_image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+
+                rows, cols = image.shape[:2]
+                # Membuat matriks rotasi
+                M = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1)
+                # Memutar gambar
+                rotated_image = cv2.warpAffine(image, M, (cols, rows))
+
                 st.image(rotated_image, caption="Rotated Image", use_column_width=True)
 
             elif selected_option == "Resize":
