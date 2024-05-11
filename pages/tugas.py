@@ -23,6 +23,7 @@ def find_contours(image):
     return contours
 
 def main():
+    st.set_page_config(layout="wide")
     st.title("Image Manipulation Web App")
 
     uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
@@ -35,6 +36,7 @@ def main():
 
         with col1:
             st.image(image, caption="Uploaded Image", use_column_width=True)
+
 
         with col2:
             st.sidebar.subheader("Image Manipulations")
@@ -105,6 +107,7 @@ def main():
             elif selected_option == "Remove Background":
                 background_removed_image = remove_background(image)
                 st.image(background_removed_image, caption="Background Removed Image", use_column_width=True)
+            st.subheader("Result Image Manipulation")
 
 
 if __name__ == "__main__":
